@@ -26,47 +26,6 @@ env:
   LLAMA_LOG_TIMESTAMPS: 1
 
 jobs:
-  windows-msys2:
-    runs-on: windows-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { sys: UCRT64,  env: ucrt-x86_64,  build: Release }
-          - { sys: CLANG64, env: clang-x86_64, build: Release }
-
-    steps:
-      - name: Clone
-        uses: actions/checkout@v4
-
-      - name: Setup ${{ matrix.sys }}
-        uses: msys2/setup-msys2@v2
-        with:
-          update: true
-          msystem: ${{matrix.sys}}
-          install: >-
-            base-devel
-            mingw-w64-${{matrix.env}}-toolchain
-            mingw-w64-${{matrix.env}}-cmake
-            mingw-w64-${{matrix.env}}-openblas
-
-      - name: Build using CMake
-        shell: msys2 {0}
-        run: |
-            cmake -B build
-            cmake --build build --config ${{ matrix.build }} -j $(nproc)
-
-      - name: Clean after building using CMake
-        shell: msys2 {0}
-        run: |
-            rm -rf build
-
-      - name: Build using CMake w/ OpenBLAS
-        shell: msys2 {0}
-        run: |
-            cmake -B build -DGGML_BLAS=ON -DGGML_BLAS_VENDOR=OpenBLAS
-            cmake --build build --config ${{ matrix.build }} -j $(nproc)
 
   windows-latest-cmake:
     runs-on: windows-latest
@@ -79,20 +38,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - build: 'noavx-x64'
-            defines: '-DGGML_NATIVE=OFF -DLLAMA_BUILD_SERVER=ON -DGGML_RPC=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF'
-          - build: 'avx2-x64'
-            defines: '-DGGML_NATIVE=OFF -DLLAMA_BUILD_SERVER=ON -DGGML_RPC=ON'
-          - build: 'avx-x64'
-            defines: '-DGGML_NATIVE=OFF -DLLAMA_BUILD_SERVER=ON -DGGML_RPC=ON -DGGML_AVX2=OFF'
-          - build: 'avx512-x64'
-            defines: '-DGGML_NATIVE=OFF -DLLAMA_BUILD_SERVER=ON -DGGML_RPC=ON -DGGML_AVX512=ON'
-          - build: 'openblas-x64'
-            defines: '-DGGML_NATIVE=OFF -DLLAMA_BUILD_SERVER=ON -DGGML_RPC=ON -DGGML_BLAS=ON -DGGML_BLAS_VENDOR=OpenBLAS -DBLAS_INCLUDE_DIRS="$env:RUNNER_TEMP/openblas/include" -DBLAS_LIBRARIES="$env:RUNNER_TEMP/openblas/lib/openblas.lib"'
-          - build: 'kompute-x64'
-            defines: '-DGGML_NATIVE=OFF -DLLAMA_BUILD_SERVER=ON -DGGML_RPC=ON -DGGML_KOMPUTE=ON -DKOMPUTE_OPT_DISABLE_VULKAN_VERSION_CHECK=ON'
-          - build: 'vulkan-x64'
-            defines: '-DGGML_NATIVE=OFF -DLLAMA_BUILD_SERVER=ON -DGGML_RPC=ON -DGGML_VULKAN=ON'
           - build: 'llvm-arm64'
             defines: '-G "Ninja Multi-Config" -D CMAKE_TOOLCHAIN_FILE=cmake/arm64-windows-llvm.cmake -DGGML_NATIVE=OFF -DLLAMA_BUILD_SERVER=ON'
           - build: 'msvc-arm64'
